@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --font: 'DM Sans', sans-serif;
+    --bg: #F8F7FC;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.09);
+    --border-med: rgba(0,0,0,0.15);
+    --text: #1A1A2E;
+    --text-2: #6B6B84;
+    --text-3: #A0A0B8;
+    --accent: #7F77DD;
+    --accent-light: #EEEDFE;
+    --accent-dark: #3C3489;
+    --accent-mid: #AFA9EC;
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --coral: #D85A30;
+    --coral-light: #FAECE7;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --sidebar-w: 240px;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 20px 16px 14px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .app-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .global-search {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border-med);
+    background: var(--bg);
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .global-search:focus { border-color: var(--accent); background: white; }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    padding: 14px 16px 6px;
+  }
+
+  .sidebar-folders {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 8px;
+  }
+
+  .sidebar-folders::-webkit-scrollbar { width: 4px; }
+  .sidebar-folders::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-folders::-webkit-scrollbar-thumb { background: var(--border-med); border-radius: 99px; }
+
+  .folder-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.1s;
+    user-select: none;
+  }
+
+  .folder-row:hover { background: var(--bg); }
+
+  .folder-row.active {
+    background: var(--accent-light);
+  }
+
+  .folder-row-emoji { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+
+  .folder-row-name {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .folder-row.active .folder-row-name { color: var(--accent-dark); font-weight: 500; }
+
+  .folder-row-count {
+    font-size: 11px;
+    color: var(--text-3);
+    background: var(--bg);
+    padding: 1px 7px;
+    border-radius: 99px;
+    flex-shrink: 0;
+  }
+
+  .folder-row.active .folder-row-count { background: var(--accent-mid); color: var(--accent-dark); }
+
+  .folder-row-edit {
+    opacity: 0;
+    font-size: 13px;
+    color: var(--text-3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .folder-row:hover .folder-row-edit { opacity: 1; }
+  .folder-row-edit:hover { color: var(--text); background: var(--border); }
+
+  .sidebar-footer {
+    padding: 10px 8px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .new-folder-btn {
+    width: 100%;
+    padding: 9px;
+    border-radius: var(--radius-sm);
+    border: 0.5px dashed var(--border-med);
+    background: none;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .new-folder-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ── MAIN AREA ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .topbar {
+    padding: 16px 24px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .topbar-subtitle {
+    font-size: 13px;
+    color: var(--text-2);
+    font-weight: 400;
+  }
+
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .btn-outline {
+    border: 0.5px solid var(--border-med);
+    background: none;
+    color: var(--text-2);
+  }
+
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  .btn-teal {
+    border: 0.5px solid var(--teal);
+    background: none;
+    color: var(--teal);
+  }
+
+  .btn-teal:hover { background: var(--teal-light); }
+
+  .btn-primary {
+    border: none;
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--accent-dark); }
+
+  .btn-danger {
+    border: none;
+    background: var(--coral);
+    color: white;
+  }
+
+  /* ── CONTENT ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border-med); border-radius: 99px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    gap: 12px;
+    color: var(--text-2);
+    text-align: center;
+  }
+
+  .empty-icon { font-size: 48px; }
+  .empty-state h2 { font-size: 17px; font-weight: 500; color: var(--text); }
+  .empty-state p { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+
+  /* ── SEARCH BAR ── */
+  .folder-search-wrap {
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  .folder-search-wrap input {
+    width: 100%;
+    padding: 9px 36px 9px 36px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border-med);
+    background: var(--surface);
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .folder-search-wrap input:focus { border-color: var(--accent); }
+
+  .search-ic {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--text-3);
+    pointer-events: none;
+  }
+
+  .search-clear-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: var(--text-3);
+    cursor: pointer;
+    display: none;
+  }
+
+  .search-info {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: 14px;
+    padding: 6px 10px;
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    display: none;
+  }
+
+  /* ── CARDS GRID ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .card-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+
+  .card-item:hover { border-color: var(--border-med); transform: translateY(-1px); }
+
+  .card-item-front {
+    padding: 14px 16px 12px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .card-item-back {
+    padding: 12px 16px 14px;
+    background: var(--accent-light);
+  }
+
+  .side-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 500;
+    margin-bottom: 7px;
+  }
+
+  .tag-front { background: var(--bg); color: var(--text-3); }
+  .tag-back { background: var(--accent-mid); color: var(--accent-dark); }
+
+  .card-item-text {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .card-item-subtext {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-top: 4px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-item-meta {
+    font-size: 11px;
+    color: var(--teal);
+    margin-top: 5px;
+  }
+
+  .card-item-actions {
+    display: flex;
+    border-top: 0.5px solid var(--border);
+    background: var(--surface);
+  }
+
+  .card-act-btn {
+    flex: 1;
+    padding: 8px;
+    background: none;
+    border: none;
+    font-family: var(--font);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--accent);
+    transition: background 0.1s;
+  }
+
+  .card-act-btn:hover { background: var(--accent-light); }
+
+  .card-act-btn.danger { color: var(--coral); }
+  .card-act-btn.danger:hover { background: var(--coral-light); }
+  .card-act-btn + .card-act-btn { border-left: 0.5px solid var(--border); }
+
+  mark.hl {
+    background: #FAC775;
+    color: #412402;
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+
+  /* ── STUDY MODE ── */
+  .study-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 640px;
+    margin: 0 auto;
+    padding-top: 8px;
+  }
+
+  .study-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 5px;
+    background: var(--border-med);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-label {
+    font-size: 13px;
+    color: var(--text-2);
+    min-width: 44px;
+    text-align: right;
+  }
+
+  .study-card-scene {
+    perspective: 1200px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .study-card {
+    min-height: 260px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(.4,.2,.2,1);
+  }
+
+  .study-card.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    min-height: 260px;
+    backface-visibility: hidden;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 28px;
+    gap: 14px;
+    transition: box-shadow 0.2s;
+  }
+
+  .card-face:hover { box-shadow: 0 4px 24px rgba(127,119,221,0.10); }
+
+  .card-face.back {
+    transform: rotateY(180deg);
+    background: var(--accent-light);
+    border-color: var(--accent-mid);
+  }
+
+  .face-badge {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+  }
+
+  .card-face.back .face-badge { color: var(--accent); }
+
+  .face-content {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .face-text {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.5;
+    letter-spacing: -0.02em;
+  }
+
+  .face-img {
+    max-width: 100%;
+    max-height: 160px;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+  }
+
+  .flip-hint {
+    font-size: 12px;
+    color: var(--text-3);
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+
+  .study-nav {
+    display: flex;
+    gap: 10px;
+  }
+
+  .study-nav .btn { flex: 1; justify-content: center; display: flex; align-items: center; }
+
+  /* ── EDITOR ── */
+  .editor-layout {
+    display: flex;
+    gap: 20px;
+    max-width: 800px;
+  }
+
+  .editor-sides {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 120px;
+    flex-shrink: 0;
+  }
+
+  .editor-side-btn {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: none;
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text-2);
+    text-align: left;
+    transition: all 0.1s;
+  }
+
+  .editor-side-btn:hover { border-color: var(--border-med); color: var(--text); background: var(--bg); }
+
+  .editor-side-btn.active {
+    background: var(--accent-light);
+    border-color: var(--accent-mid);
+    color: var(--accent-dark);
+    font-weight: 500;
+  }
+
+  .editor-panel-wrap { flex: 1; }
+
+  .editor-panel { display: none; flex-direction: column; gap: 16px; }
+  .editor-panel.active { display: flex; }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    margin-bottom: 6px;
+  }
+
+  .rich-editor-wrap {
+    border: 0.5px solid var(--border-med);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .rich-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 7px 10px;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .tb-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: var(--text-2);
+    font-family: var(--font);
+    transition: all 0.1s;
+  }
+
+  .tb-btn:hover { background: var(--surface); color: var(--text); }
+
+  .tb-sep {
+    width: 0.5px;
+    background: var(--border-med);
+    margin: 4px 4px;
+  }
+
+  .content-editable {
+    min-height: 100px;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    line-height: 1.7;
+    font-family: var(--font);
+  }
+
+  .content-editable:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-3);
+    pointer-events: none;
+  }
+
+  .img-section {
+    border: 0.5px dashed var(--border-med);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .img-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .img-url-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border-med);
+    background: var(--bg);
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+  }
+
+  .img-url-input:focus { border-color: var(--accent); background: white; }
+
+  .upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px;
+    border-radius: var(--radius-sm);
+    border: 0.5px dashed var(--border-med);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-2);
+    transition: all 0.15s;
+  }
+
+  .upload-label:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  input[type="file"] { display: none; }
+
+  .img-preview-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .img-preview-box {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+  }
+
+  .img-preview-el {
+    width: 100%;
+    display: block;
+    object-fit: contain;
+  }
+
+  .fit-controls {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .fit-pill {
+    padding: 4px 11px;
+    border-radius: 99px;
+    border: 0.5px solid var(--border-med);
+    background: none;
+    font-size: 12px;
+    color: var(--text-2);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.1s;
+  }
+
+  .fit-pill.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .fit-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+  .height-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .height-row label { font-size: 12px; color: var(--text-2); white-space: nowrap; }
+
+  .height-row input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border-med);
+    border-radius: 99px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .height-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .height-val { font-size: 12px; color: var(--text-2); min-width: 36px; }
+
+  .remove-img-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--coral);
+    cursor: pointer;
+    padding: 2px 0;
+    font-family: var(--font);
+    text-align: left;
+    width: fit-content;
+  }
+
+  /* ── MODALS ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,15,40,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border-med);
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    animation: modal-in 0.2s ease;
+  }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-head {
+    padding: 16px 20px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title { font-size: 16px; font-weight: 500; color: var(--text); }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--text-3);
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body {
+    padding: 18px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+  }
+
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 9px 13px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border-med);
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input:focus { border-color: var(--accent); }
+
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 4px;
+  }
+
+  .emoji-opt {
+    font-size: 20px;
+    text-align: center;
+    padding: 5px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .emoji-opt:hover { background: var(--bg); }
+  .emoji-opt.selected { background: var(--accent-light); }
+
+  .color-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .color-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s;
+  }
+
+  .color-swatch:hover { transform: scale(1.1); }
+  .color-swatch.selected { border-color: var(--text); transform: scale(1.1); }
+
+  /* ── HOME SCREEN ── */
+  .home-content { max-width: 740px; }
+
+  .search-results-folders { display: flex; flex-direction: column; gap: 14px; }
+
+  .result-folder-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .result-folder-name { font-size: 14px; font-weight: 500; color: var(--text); }
+
+  .home-folder-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+
+  .home-folder-card:hover { border-color: var(--border-med); transform: translateY(-1px); }
+
+  .home-folder-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .home-folder-info { flex: 1; min-width: 0; }
+  .home-folder-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .home-folder-meta { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+
+  .home-folder-actions { display: flex; gap: 4px; }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 5px 7px;
+    border-radius: var(--radius-sm);
+    color: var(--text-3);
+    opacity: 0;
+    transition: all 0.1s;
+  }
+
+  .home-folder-card:hover .icon-btn { opacity: 1; }
+  .icon-btn:hover { color: var(--text); background: var(--bg); }
+  .icon-btn.danger:hover { color: var(--coral); background: var(--coral-light); }
+
+  .chevron { color: var(--text-3); font-size: 20px; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  /* ── MOBILE NAV ── */
+  @media (max-width: 680px) {
+    .sidebar { display: none; }
+    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; width: 100%; z-index: 100; }
+    .topbar { padding: 12px 16px; }
+    .content { padding: 16px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .editor-layout { flex-direction: column; }
+    .editor-sides { flex-direction: row; width: 100%; }
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--text);
+    color: white;
+    padding: 9px 18px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="app-logo">
+        <div class="logo-mark">✦</div>
+        <span class="logo-text">Flashcards</span>
+      </div>
+      <input class="global-search" id="globalSearch" type="text" placeholder="Buscar en todo..." oninput="doGlobalSearch(this)">
+    </div>
+    <div class="sidebar-section-label">Carpetas</div>
+    <div class="sidebar-folders" id="sidebarFolders"></div>
+    <div class="sidebar-footer">
+      <button class="new-folder-btn" onclick="openNewFolder()">+ Nueva carpeta</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- HOME SCREEN -->
+    <div class="screen active" id="screen-home">
+      <div class="topbar">
+        <div class="topbar-title">Mis carpetas</div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary" onclick="openNewFolder()">+ Nueva carpeta</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="home-content" id="homeContent"></div>
+      </div>
+    </div>
+
+    <!-- FOLDER SCREEN -->
+    <div class="screen" id="screen-folder">
+      <div class="topbar">
+        <div class="topbar-title" id="folderTopTitle"></div>
+        <div class="topbar-actions">
+          <button class="btn btn-teal" onclick="startStudy()">▶ Estudiar</button>
+          <button class="btn btn-primary" onclick="openNewCard()">+ Tarjeta</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="folder-search-wrap">
+          <span class="search-ic">⌕</span>
+          <input type="text" id="folderSearch" placeholder="Buscar en esta carpeta..." oninput="doFolderSearch(this)">
+          <button class="search-clear-btn" id="folderSearchClear" onclick="clearFolderSearch()">✕</button>
+        </div>
+        <div class="search-info" id="folderSearchInfo"></div>
+        <div id="cardsList"></div>
+      </div>
+    </div>
+
+    <!-- STUDY SCREEN -->
+    <div class="screen" id="screen-study">
+      <div class="topbar">
+        <div class="topbar-title">
+          <button class="btn btn-outline" onclick="goFolder()" style="font-size:13px;padding:6px 12px">‹ Volver</button>
+          <span id="studyFolderName"></span>
+        </div>
+      </div>
+      <div class="content">
+        <div class="study-wrap">
+          <div class="study-progress-row">
+            <div class="progress-track"><div class="progress-fill" id="studyBar"></div></div>
+            <span class="progress-label" id="studyCounter"></span>
+          </div>
+          <div class="study-card-scene" onclick="flipStudyCard()">
+            <div class="study-card" id="studyCard">
+              <div class="card-face front">
+                <span class="face-badge">Frente</span>
+                <div class="face-content" id="studyFront"></div>
+              </div>
+              <div class="card-face back">
+                <span class="face-badge">Reverso</span>
+                <div class="face-content" id="studyBack"></div>
+              </div>
+            </div>
+          </div>
+          <p class="flip-hint" id="flipHint">Toca la tarjeta para ver el reverso</p>
+          <div class="study-nav">
+            <button class="btn btn-outline" onclick="studyPrev()">‹ Anterior</button>
+            <button class="btn btn-primary" onclick="studyNext()">Siguiente ›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDITOR SCREEN -->
+    <div class="screen" id="screen-editor">
+      <div class="topbar">
+        <div class="topbar-title" id="editorTitle">Nueva tarjeta</div>
+        <div class="topbar-actions">
+          <button class="btn btn-outline" onclick="cancelEditor()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveCard()">Guardar tarjeta</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="editor-layout">
+          <div class="editor-sides">
+            <button class="editor-side-btn active" id="sideBtn-front" onclick="switchSide('front')">Frente</button>
+            <button class="editor-side-btn" id="sideBtn-back" onclick="switchSide('back')">Reverso</button>
+          </div>
+          <div class="editor-panel-wrap">
+            <!-- FRONT -->
+            <div class="editor-panel active" id="panel-front">
+              <div>
+                <div class="field-label">Texto</div>
+                <div class="rich-editor-wrap">
+                  <div class="rich-toolbar">
+                    <button class="tb-btn" onclick="execFmt('bold')"><b>N</b></button>
+                    <button class="tb-btn" onclick="execFmt('italic')"><i>C</i></button>
+                    <button class="tb-btn" onclick="execFmt('underline')"><u>S</u></button>
+                    <div class="tb-sep"></div>
+                    <button class="tb-btn" onclick="execFmt('insertUnorderedList')">• Lista</button>
+                    <div class="tb-sep"></div>
+                    <button class="tb-btn" onclick="openEmojiPicker('front')">☺ Emoji</button>
+                    <button class="tb-btn" onclick="openLinkModal('front')">🔗 Link</button>
+                  </div>
+                  <div class="content-editable" id="frontText" contenteditable="true" data-placeholder="Escribe el frente de la tarjeta..."></div>
+                </div>
+              </div>
+              <div>
+                <div class="field-label">Imagen</div>
+                <div class="img-section">
+                  <div class="img-row">
+                    <input class="img-url-input" id="frontImgUrl" placeholder="https://... URL de imagen">
+                    <button class="btn btn-outline" style="font-size:13px;padding:7px 14px" onclick="loadImg('front')">Cargar</button>
+                  </div>
+                  <label class="upload-label" for="frontFile">📎 Subir desde dispositivo</label>
+                  <input type="file" id="frontFile" accept="image/*" onchange="handleUpload('front',this)">
+                  <div class="img-preview-wrap" id="frontPreviewWrap">
+                    <div class="img-preview-box" id="frontImgBox" style="height:160px">
+                      <img class="img-preview-el" id="frontImgEl" src="" alt="">
+                    </div>
+                    <div>
+                      <div class="field-label" style="margin-bottom:5px">Ajuste de imagen</div>
+                      <div class="fit-controls">
+                        <button class="fit-pill active" onclick="setFit('front','contain',this)">Contener</button>
+                        <button class="fit-pill" onclick="setFit('front','cover',this)">Cubrir</button>
+                        <button class="fit-pill" onclick="setFit('front','fill',this)">Llenar</button>
+                        <button class="fit-pill" onclick="setFit('front','none',this)">Original</button>
+                        <button class="fit-pill" onclick="setFit('front','scale-down',this)">Escalar</button>
+                      </div>
+                    </div>
+                    <div class="height-row">
+                      <label>Alto</label>
+                      <input type="range" min="80" max="400" step="10" value="160" oninput="setImgH('front',this.value)">
+                      <span class="height-val" id="frontHVal">160px</span>
+                    </div>
+                    <button class="remove-img-btn" onclick="removeImg('front')">✕ Quitar imagen</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- BACK -->
+            <div class="editor-panel" id="panel-back">
+              <div>
+                <div class="field-label">Texto</div>
+                <div class="rich-editor-wrap">
+                  <div class="rich-toolbar">
+                    <button class="tb-btn" onclick="execFmt2('bold')"><b>N</b></button>
+                    <button class="tb-btn" onclick="execFmt2('italic')"><i>C</i></button>
+                    <button class="tb-btn" onclick="execFmt2('underline')"><u>S</u></button>
+                    <div class="tb-sep"></div>
+                    <button class="tb-btn" onclick="execFmt2('insertUnorderedList')">• Lista</button>
+                    <div class="tb-sep"></div>
+                    <button class="tb-btn" onclick="openEmojiPicker('back')">☺ Emoji</button>
+                    <button class="tb-btn" onclick="openLinkModal('back')">🔗 Link</button>
+                  </div>
+                  <div class="content-editable" id="backText" contenteditable="true" data-placeholder="Escribe el reverso de la tarjeta..."></div>
+                </div>
+              </div>
+              <div>
+                <div class="field-label">Imagen</div>
+                <div class="img-section">
+                  <div class="img-row">
+                    <input class="img-url-input" id="backImgUrl" placeholder="https://... URL de imagen">
+                    <button class="btn btn-outline" style="font-size:13px;padding:7px 14px" onclick="loadImg('back')">Cargar</button>
+                  </div>
+                  <label class="upload-label" for="backFile">📎 Subir desde dispositivo</label>
+                  <input type="file" id="backFile" accept="image/*" onchange="handleUpload('back',this)">
+                  <div class="img-preview-wrap" id="backPreviewWrap">
+                    <div class="img-preview-box" id="backImgBox" style="height:160px">
+                      <img class="img-preview-el" id="backImgEl" src="" alt="">
+                    </div>
+                    <div>
+                      <div class="field-label" style="margin-bottom:5px">Ajuste de imagen</div>
+                      <div class="fit-controls">
+                        <button class="fit-pill active" onclick="setFit('back','contain',this)">Contener</button>
+                        <button class="fit-pill" onclick="setFit('back','cover',this)">Cubrir</button>
+                        <button class="fit-pill" onclick="setFit('back','fill',this)">Llenar</button>
+                        <button class="fit-pill" onclick="setFit('back','none',this)">Original</button>
+                        <button class="fit-pill" onclick="setFit('back','scale-down',this)">Escalar</button>
+                      </div>
+                    </div>
+                    <div class="height-row">
+                      <label>Alto</label>
+                      <input type="range" min="80" max="400" step="10" value="160" oninput="setImgH('back',this.value)">
+                      <span class="height-val" id="backHVal">160px</span>
+                    </div>
+                    <button class="remove-img-btn" onclick="removeImg('back')">✕ Quitar imagen</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: Nueva/Editar carpeta -->
+<div class="modal-backdrop" id="modalFolder">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="folderModalTitle">Nueva carpeta</span>
+      <button class="modal-close" onclick="closeModal('modalFolder')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="field-label">Nombre</div>
+        <input class="form-input" id="folderNameInput" placeholder="Ej: Biología, Historia, Idiomas...">
+      </div>
+      <div>
+        <div class="field-label">Ícono</div>
+        <div class="emoji-grid" id="folderEmojiGrid"></div>
+      </div>
+      <div>
+        <div class="field-label">Color</div>
+        <div class="color-grid" id="folderColorGrid"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalFolder')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFolder()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Emoji picker -->
+<div class="modal-backdrop" id="modalEmoji">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-head">
+      <span class="modal-title">Insertar emoji</span>
+      <button class="modal-close" onclick="closeModal('modalEmoji')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="emoji-grid" id="emojiPickerGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Link -->
+<div class="modal-backdrop" id="modalLink">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-head">
+      <span class="modal-title">Insertar enlace</span>
+      <button class="modal-close" onclick="closeModal('modalLink')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="field-label">Texto visible</div>
+        <input class="form-input" id="linkText" placeholder="Ej: Ver documento">
+      </div>
+      <div>
+        <div class="field-label">URL</div>
+        <input class="form-input" id="linkUrl" placeholder="https://...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalLink')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmLink()">Insertar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const FOLDER_EMOJIS = ['📚','🧬','🌍','🔢','💡','🎨','🏛️','⚗️','🖥️','🎵','🌿','🔭','📐','🗺️','🧠','💬','🌟','🔬','✈️','🍎','🏋️','🎯','📝','🔑'];
+const PICK_EMOJIS = ['😀','😂','❤️','🔥','✅','⭐','🎯','💡','📌','🚀','🧩','🌈','🔑','💎','🎉','⚡','🌙','🍀','🏆','🎓','👍','🙌','💪','🤔','😮','🥳','🤯','👀','💯','✨','🌸','🦋'];
+const COLORS = ['#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#E24B4A','#639922','#888780','#5DCAA5'];
+const COLOR_LIGHTS = ['#EEEDFE','#E1F5EE','#FAECE7','#E6F1FB','#FBEAF0','#FAEEDA','#FCEBEB','#EAF3DE','#F1EFE8','#E1F5EE'];
+
+let S = {
+  folders: [],
+  curFolderId: null,
+  editingCardId: null,
+  editingFolderId: null,
+  studyCards: [],
+  studyIdx: 0,
+  studyFlipped: false,
+  selEmoji: FOLDER_EMOJIS[0],
+  selColor: 0,
+  emojiTarget: 'front',
+  linkTarget: 'front',
+  imgState: {
+    front: { url:'', fit:'contain', h:160 },
+    back: { url:'', fit:'contain', h:160 }
+  }
+};
+
+function persist() {
+  try { localStorage.setItem('fc_data', JSON.stringify(S.folders)); } catch(e){}
+}
+
+function restore() {
+  try {
+    const d = localStorage.getItem('fc_data');
+    if (d) S.folders = JSON.parse(d);
+  } catch(e){}
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── SIDEBAR ──
+function renderSidebar() {
+  const el = document.getElementById('sidebarFolders');
+  el.innerHTML = '';
+  S.folders.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'folder-row' + (f.id === S.curFolderId ? ' active' : '');
+    row.innerHTML = `
+      <span class="folder-row-emoji">${f.emoji||'📁'}</span>
+      <span class="folder-row-name">${esc(f.name)}</span>
+      <span class="folder-row-count">${f.cards.length}</span>
+      <button class="folder-row-edit" onclick="event.stopPropagation();editFolder('${f.id}')" title="Editar">✎</button>
+    `;
+    row.addEventListener('click', () => openFolder(f.id));
+    el.appendChild(row);
+  });
+}
+
+// ── HOME ──
+function renderHome(filter) {
+  const el = document.getElementById('homeContent');
+  el.innerHTML = '';
+  if (!S.folders.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📁</div><h2>Sin carpetas aún</h2><p>Crea tu primera carpeta para empezar<br>a organizar tus flashcards.</p></div>`;
+    return;
+  }
+  if (filter) {
+    const q = filter.toLowerCase();
+    const results = [];
+    S.folders.forEach(f => {
+      const matches = f.cards.filter(c => stripHTML(c.frontText||'').toLowerCase().includes(q) || stripHTML(c.backText||'').toLowerCase().includes(q));
+      if (matches.length) results.push({ folder: f, matches });
+    });
+    if (!results.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h2>Sin resultados</h2><p>No se encontró "<strong>${esc(filter)}</strong>" en ninguna tarjeta.</p></div>`;
+      return;
+    }
+    el.innerHTML = `<div style="margin-bottom:12px;font-size:13px;color:var(--text-2)">${results.reduce((a,r)=>a+r.matches.length,0)} resultado(s) en ${results.length} carpeta(s)</div>`;
+    const wrap = document.createElement('div');
+    wrap.className = 'search-results-folders';
+    results.forEach(r => {
+      const sec = document.createElement('div');
+      const colorIdx = COLORS.indexOf(r.folder.color);
+      const light = colorIdx >= 0 ? COLOR_LIGHTS[colorIdx] : '#EEEDFE';
+      sec.innerHTML = `<div class="result-folder-header"><span style="font-size:18px">${r.folder.emoji||'📁'}</span><span class="result-folder-name">${esc(r.folder.name)}</span><span style="font-size:12px;color:var(--text-3)">${r.matches.length} coincidencia(s)</span></div>`;
+      const grid = document.createElement('div');
+      grid.className = 'cards-grid';
+      r.matches.forEach(c => {
+        const card = buildCardItem(c, r.folder.id, q);
+        grid.appendChild(card);
+      });
+      sec.appendChild(grid);
+      wrap.appendChild(sec);
+    });
+    el.appendChild(wrap);
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'cards-grid';
+  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
+  S.folders.forEach(f => {
+    const colorIdx = COLORS.indexOf(f.color);
+    const light = colorIdx >= 0 ? COLOR_LIGHTS[colorIdx] : '#EEEDFE';
+    const div = document.createElement('div');
+    div.className = 'home-folder-card';
+    div.innerHTML = `
+      <div class="home-folder-icon" style="background:${light}">${f.emoji||'📁'}</div>
+      <div class="home-folder-info">
+        <div class="home-folder-name">${esc(f.name)}</div>
+        <div class="home-folder-meta">${f.cards.length} tarjeta${f.cards.length!==1?'s':''}</div>
+      </div>
+      <div class="home-folder-actions">
+        <button class="icon-btn" onclick="event.stopPropagation();editFolder('${f.id}')" title="Editar">✎</button>
+        <button class="icon-btn danger" onclick="event.stopPropagation();deleteFolder('${f.id}')" title="Eliminar">🗑</button>
+      </div>
+      <span class="chevron">›</span>
+    `;
+    div.addEventListener('click', () => openFolder(f.id));
+    grid.appendChild(div);
+  });
+  el.appendChild(grid);
+}
+
+// ── FOLDERS ──
+function openFolder(id) {
+  S.curFolderId = id;
+  const f = S.folders.find(x=>x.id===id);
+  document.getElementById('folderTopTitle').textContent = (f.emoji||'') + ' ' + f.name;
+  document.getElementById('folderSearch').value = '';
+  document.getElementById('folderSearchInfo').style.display = 'none';
+  document.getElementById('folderSearchClear').style.display = 'none';
+  showScreen('folder');
+  renderSidebar();
+  renderCards();
+}
+
+function openNewFolder() {
+  S.editingFolderId = null;
+  S.selEmoji = FOLDER_EMOJIS[0];
+  S.selColor = 0;
+  document.getElementById('folderNameInput').value = '';
+  document.getElementById('folderModalTitle').textContent = 'Nueva carpeta';
+  renderFolderEmojis();
+  renderFolderColors();
+  openModal('modalFolder');
+}
+
+function editFolder(id) {
+  const f = S.folders.find(x=>x.id===id);
+  S.editingFolderId = id;
+  S.selEmoji = f.emoji || FOLDER_EMOJIS[0];
+  S.selColor = COLORS.indexOf(f.color);
+  if (S.selColor < 0) S.selColor = 0;
+  document.getElementById('folderNameInput').value = f.name;
+  document.getElementById('folderModalTitle').textContent = 'Editar carpeta';
+  renderFolderEmojis();
+  renderFolderColors();
+  openModal('modalFolder');
+}
+
+function saveFolder() {
+  const name = document.getElementById('folderNameInput').value.trim();
+  if (!name) { document.getElementById('folderNameInput').focus(); return; }
+  if (S.editingFolderId) {
+    const f = S.folders.find(x=>x.id===S.editingFolderId);
+    f.name = name; f.emoji = S.selEmoji; f.color = COLORS[S.selColor];
+    toast('Carpeta actualizada');
+  } else {
+    S.folders.push({ id: uid(), name, emoji: S.selEmoji, color: COLORS[S.selColor], cards: [] });
+    toast('Carpeta creada');
+  }
+  persist();
+  closeModal('modalFolder');
+  renderSidebar();
+  renderHome();
+}
+
+function deleteFolder(id) {
+  if (!confirm('¿Eliminar esta carpeta y todas sus tarjetas?')) return;
+  S.folders = S.folders.filter(x=>x.id!==id);
+  persist();
+  renderSidebar();
+  renderHome();
+  toast('Carpeta eliminada');
+}
+
+function renderFolderEmojis() {
+  const g = document.getElementById('folderEmojiGrid');
+  g.innerHTML = FOLDER_EMOJIS.map(e => `<span class="emoji-opt${e===S.selEmoji?' selected':''}" onclick="selectFolderEmoji('${e}')">${e}</span>`).join('');
+}
+
+function selectFolderEmoji(e) { S.selEmoji = e; renderFolderEmojis(); }
+
+function renderFolderColors() {
+  const g = document.getElementById('folderColorGrid');
+  g.innerHTML = COLORS.map((c,i) => `<div class="color-swatch${i===S.selColor?' selected':''}" style="background:${c}" onclick="selectColor(${i})"></div>`).join('');
+}
+
+function selectColor(i) { S.selColor = i; renderFolderColors(); }
+
+// ── CARDS ──
+function curFolder() { return S.folders.find(x=>x.id===S.curFolderId); }
+
+function renderCards(filter) {
+  const f = curFolder();
+  const el = document.getElementById('cardsList');
+  el.innerHTML = '';
+  const cards = filter ? f.cards.filter(c => stripHTML(c.frontText||'').toLowerCase().includes(filter.toLowerCase()) || stripHTML(c.backText||'').toLowerCase().includes(filter.toLowerCase())) : f.cards;
+  if (!cards.length) {
+    el.innerHTML = filter
+      ? `<div class="empty-state"><div class="empty-icon">🔍</div><h2>Sin resultados</h2><p>No hay tarjetas con ese texto.</p></div>`
+      : `<div class="empty-state"><div class="empty-icon">✦</div><h2>Sin tarjetas</h2><p>Agrega tu primera tarjeta a esta carpeta.</p></div>`;
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'cards-grid';
+  cards.forEach(c => grid.appendChild(buildCardItem(c, S.curFolderId, filter)));
+  el.appendChild(grid);
+}
+
+function buildCardItem(c, folderId, filter) {
+  const div = document.createElement('div');
+  div.className = 'card-item';
+  const ft = filter ? hlText(stripHTML(c.frontText||''), filter) : (stripHTML(c.frontText||'') || '<em style="color:var(--text-3)">Sin texto</em>');
+  const bt = filter ? hlText(stripHTML(c.backText||''), filter) : (stripHTML(c.backText||'') || '<em style="color:var(--text-3)">Sin texto</em>');
+  div.innerHTML = `
+    <div class="card-item-front">
+      <div class="side-tag tag-front">Frente</div>
+      <div class="card-item-text">${ft}</div>
+      ${c.frontImg ? `<div class="card-item-meta">📷 Con imagen</div>` : ''}
+    </div>
+    <div class="card-item-back">
+      <div class="side-tag tag-back">Reverso</div>
+      <div class="card-item-subtext">${bt}</div>
+      ${c.backImg ? `<div class="card-item-meta">📷 Con imagen</div>` : ''}
+    </div>
+    <div class="card-item-actions">
+      <button class="card-act-btn" onclick="editCard('${c.id}','${folderId}')">✎ Editar</button>
+      <button class="card-act-btn danger" onclick="deleteCard('${c.id}','${folderId}')">🗑 Eliminar</button>
+    </div>
+  `;
+  return div;
+}
+
+function openNewCard() {
+  S.editingCardId = null;
+  document.getElementById('editorTitle').textContent = 'Nueva tarjeta';
+  document.getElementById('frontText').innerHTML = '';
+  document.getElementById('backText').innerHTML = '';
+  S.imgState = { front:{url:'',fit:'contain',h:160}, back:{url:'',fit:'contain',h:160} };
+  resetImgPreview('front');
+  resetImgPreview('back');
+  switchSide('front');
+  showScreen('editor');
+}
+
+function editCard(id, folderId) {
+  const f = S.folders.find(x=>x.id===folderId);
+  const c = f.cards.find(x=>x.id===id);
+  S.editingCardId = id;
+  S.curFolderId = folderId;
+  document.getElementById('editorTitle').textContent = 'Editar tarjeta';
+  document.getElementById('frontText').innerHTML = c.frontText || '';
+  document.getElementById('backText').innerHTML = c.backText || '';
+  S.imgState = {
+    front: { url: c.frontImg||'', fit: c.frontFit||'contain', h: c.frontH||160 },
+    back: { url: c.backImg||'', fit: c.backFit||'contain', h: c.backH||160 }
+  };
+  if (c.frontImg) showImgPreview('front', c.frontImg, c.frontFit||'contain', c.frontH||160);
+  else resetImgPreview('front');
+  if (c.backImg) showImgPreview('back', c.backImg, c.backFit||'contain', c.backH||160);
+  else resetImgPreview('back');
+  switchSide('front');
+  showScreen('editor');
+}
+
+function saveCard() {
+  const f = curFolder();
+  const frontText = document.getElementById('frontText').innerHTML;
+  const backText = document.getElementById('backText').innerHTML;
+  if (!stripHTML(frontText).trim() && !stripHTML(backText).trim() && !S.imgState.front.url && !S.imgState.back.url) {
+    toast('Agrega algo a la tarjeta antes de guardar');
+    return;
+  }
+  const fi = S.imgState.front, bi = S.imgState.back;
+  if (S.editingCardId) {
+    const c = f.cards.find(x=>x.id===S.editingCardId);
+    c.frontText=frontText; c.backText=backText;
+    c.frontImg=fi.url; c.frontFit=fi.fit; c.frontH=fi.h;
+    c.backImg=bi.url; c.backFit=bi.fit; c.backH=bi.h;
+    toast('Tarjeta actualizada');
+  } else {
+    f.cards.push({ id:uid(), frontText, backText, frontImg:fi.url, frontFit:fi.fit, frontH:fi.h, backImg:bi.url, backFit:bi.fit, backH:bi.h });
+    toast('Tarjeta creada');
+  }
+  persist();
+  renderSidebar();
+  goFolder();
+}
+
+function cancelEditor() { goFolder(); }
+
+function deleteCard(id, folderId) {
+  if (!confirm('¿Eliminar esta tarjeta?')) return;
+  const f = S.folders.find(x=>x.id===folderId);
+  f.cards = f.cards.filter(x=>x.id!==id);
+  persist();
+  renderSidebar();
+  renderCards(document.getElementById('folderSearch').value.trim() || undefined);
+  toast('Tarjeta eliminada');
+}
+
+// ── EDITOR ──
+function switchSide(side) {
+  ['front','back'].forEach(s => {
+    document.getElementById('sideBtn-'+s).classList.toggle('active', s===side);
+    document.getElementById('panel-'+s).classList.toggle('active', s===side);
+  });
+}
+
+function execFmt(cmd) { document.getElementById('frontText').focus(); document.execCommand(cmd, false, null); }
+function execFmt2(cmd) { document.getElementById('backText').focus(); document.execCommand(cmd, false, null); }
+
+function openEmojiPicker(target) {
+  S.emojiTarget = target;
+  document.getElementById('emojiPickerGrid').innerHTML = PICK_EMOJIS.map(e => `<span class="emoji-opt" onclick="insertEmoji('${e}')">${e}</span>`).join('');
+  openModal('modalEmoji');
+}
+
+function insertEmoji(e) {
+  const ed = document.getElementById(S.emojiTarget+'Text');
+  ed.focus();
+  document.execCommand('insertText', false, e);
+  closeModal('modalEmoji');
+}
+
+function openLinkModal(target) {
+  S.linkTarget = target;
+  document.getElementById('linkText').value = '';
+  document.getElementById('linkUrl').value = '';
+  openModal('modalLink');
+}
+
+function confirmLink() {
+  const text = document.getElementById('linkText').value || document.getElementById('linkUrl').value;
+  const url = document.getElementById('linkUrl').value.trim();
+  if (!url) return;
+  const ed = document.getElementById(S.linkTarget+'Text');
+  ed.focus();
+  document.execCommand('insertHTML', false, `<a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">${text}</a>`);
+  closeModal('modalLink');
+}
+
+// ── IMAGES ──
+function loadImg(side) {
+  const url = document.getElementById(side+'ImgUrl').value.trim();
+  if (!url) return;
+  S.imgState[side].url = url;
+  showImgPreview(side, url, S.imgState[side].fit, S.imgState[side].h);
+}
+
+function handleUpload(side, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const url = e.target.result;
+    S.imgState[side].url = url;
+    showImgPreview(side, url, S.imgState[side].fit, S.imgState[side].h);
+  };
+  reader.readAsDataURL(file);
+}
+
+function showImgPreview(side, url, fit, h) {
+  const wrap = document.getElementById(side+'PreviewWrap');
+  const img = document.getElementById(side+'ImgEl');
+  const box = document.getElementById(side+'ImgBox');
+  img.src = url;
+  img.style.objectFit = fit;
+  img.style.height = h+'px';
+  box.style.height = h+'px';
+  wrap.style.display = 'flex';
+  document.getElementById(side+'HVal').textContent = h+'px';
+  const range = document.querySelector(`#panel-${side} .height-row input[type=range]`);
+  if (range) range.value = h;
+  document.querySelectorAll(`#panel-${side} .fit-pill`).forEach(b => {
+    const map = { contain:'contener', cover:'cubrir', fill:'llenar', none:'original', 'scale-down':'escalar' };
+    b.classList.toggle('active', b.textContent.toLowerCase() === (map[fit]||fit));
+  });
+}
+
+function resetImgPreview(side) {
+  document.getElementById(side+'PreviewWrap').style.display = 'none';
+  document.getElementById(side+'ImgUrl').value = '';
+  const f = document.getElementById(side+'File');
+  if (f) f.value = '';
+}
+
+function removeImg(side) {
+  S.imgState[side].url = '';
+  resetImgPreview(side);
+}
+
+function setFit(side, fit, btn) {
+  S.imgState[side].fit = fit;
+  document.getElementById(side+'ImgEl').style.objectFit = fit;
+  document.querySelectorAll(`#panel-${side} .fit-pill`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function setImgH(side, val) {
+  S.imgState[side].h = parseInt(val);
+  document.getElementById(side+'ImgEl').style.height = val+'px';
+  document.getElementById(side+'ImgBox').style.height = val+'px';
+  document.getElementById(side+'HVal').textContent = val+'px';
+}
+
+// ── SEARCH ──
+function doGlobalSearch(input) {
+  const q = input.value.trim();
+  if (q) {
+    showScreen('home');
+    S.curFolderId = null;
+    renderSidebar();
+    renderHome(q);
+  } else {
+    renderHome();
+  }
+}
+
+function doFolderSearch(input) {
+  const q = input.value.trim();
+  const info = document.getElementById('folderSearchInfo');
+  const clearBtn = document.getElementById('folderSearchClear');
+  clearBtn.style.display = q ? 'block' : 'none';
+  if (!q) { info.style.display='none'; renderCards(); return; }
+  const f = curFolder();
+  const count = f.cards.filter(c => stripHTML(c.frontText||'').toLowerCase().includes(q.toLowerCase()) || stripHTML(c.backText||'').toLowerCase().includes(q.toLowerCase())).length;
+  info.style.display = 'block';
+  info.textContent = `${count} resultado${count!==1?'s':''}`;
+  renderCards(q);
+}
+
+function clearFolderSearch() {
+  document.getElementById('folderSearch').value = '';
+  document.getElementById('folderSearchClear').style.display = 'none';
+  document.getElementById('folderSearchInfo').style.display = 'none';
+  renderCards();
+}
+
+// ── STUDY ──
+function startStudy() {
+  const f = curFolder();
+  if (!f.cards.length) { toast('Agrega tarjetas primero'); return; }
+  S.studyCards = [...f.cards];
+  S.studyIdx = 0;
+  S.studyFlipped = false;
+  document.getElementById('studyFolderName').textContent = (f.emoji||'') + ' ' + f.name;
+  showScreen('study');
+  renderStudyCard();
+}
+
+function renderStudyCard() {
+  const c = S.studyCards[S.studyIdx];
+  const total = S.studyCards.length;
+  document.getElementById('studyBar').style.width = ((S.studyIdx+1)/total*100)+'%';
+  document.getElementById('studyCounter').textContent = `${S.studyIdx+1} / ${total}`;
+  document.getElementById('studyCard').classList.remove('flipped');
+  S.studyFlipped = false;
+  document.getElementById('flipHint').style.display = 'block';
+
+  const front = document.getElementById('studyFront');
+  const back = document.getElementById('studyBack');
+  front.innerHTML = '';
+  back.innerHTML = '';
+
+  if (c.frontText) { const d=document.createElement('div'); d.innerHTML=c.frontText; d.style.fontSize='20px'; d.style.fontWeight='500'; d.style.letterSpacing='-0.02em'; front.appendChild(d); }
+  if (c.frontImg) {
+    const img=document.createElement('img'); img.className='face-img';
+    img.src=c.frontImg; img.style.objectFit=c.frontFit||'contain'; img.style.maxHeight=(c.frontH||160)+'px';
+    front.appendChild(img);
+  }
+  if (c.backText) { const d=document.createElement('div'); d.innerHTML=c.backText; d.style.fontSize='18px'; d.style.fontWeight='500'; d.style.letterSpacing='-0.02em'; back.appendChild(d); }
+  if (c.backImg) {
+    const img=document.createElement('img'); img.className='face-img';
+    img.src=c.backImg; img.style.objectFit=c.backFit||'contain'; img.style.maxHeight=(c.backH||160)+'px';
+    back.appendChild(img);
+  }
+}
+
+function flipStudyCard() {
+  S.studyFlipped = !S.studyFlipped;
+  document.getElementById('studyCard').classList.toggle('flipped', S.studyFlipped);
+  document.getElementById('flipHint').style.display = S.studyFlipped ? 'none' : 'block';
+}
+
+function studyNext() {
+  if (S.studyIdx < S.studyCards.length-1) { S.studyIdx++; renderStudyCard(); }
+  else { toast('¡Completaste todas las tarjetas!'); goFolder(); }
+}
+
+function studyPrev() {
+  if (S.studyIdx > 0) { S.studyIdx--; renderStudyCard(); }
+}
+
+// ── NAV ──
+function goFolder() {
+  showScreen('folder');
+  renderCards();
+}
+
+// ── MODALS ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+});
+
+// ── UTILS ──
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function stripHTML(html) { const d=document.createElement('div'); d.innerHTML=html; return d.textContent||d.innerText||''; }
+function hlText(text, q) {
+  if (!q) return esc(text);
+  return esc(text).replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark class="hl">$1</mark>');
+}
+
+// ── INIT ──
+restore();
+renderSidebar();
+renderHome();
+</script>
+</body>
+</html>
