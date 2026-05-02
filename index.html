@@ -187,9 +187,13 @@
   .sidebar-footer {
     padding: 10px 8px;
     border-top: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  .new-folder-btn {
+  .new-folder-btn,
+  .import-json-btn {
     width: 100%;
     padding: 9px;
     border-radius: var(--radius-sm);
@@ -202,7 +206,8 @@
     transition: all 0.15s;
   }
 
-  .new-folder-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .new-folder-btn:hover,
+  .import-json-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
   /* ── MAIN AREA ── */
   .main {
@@ -998,870 +1003,549 @@
 
   .home-folder-card:hover .icon-btn { opacity: 1; }
   .icon-btn:hover { color: var(--text); background: var(--bg); }
-  .icon-btn.danger:hover { color: var(--coral); background: var(--coral-light); }
-
-  .chevron { color: var(--text-3); font-size: 20px; }
-
-  /* ── SCREENS ── */
-  .screen { display: none; flex-direction: column; height: 100%; overflow: hidden; }
-  .screen.active { display: flex; }
-
-  /* ── MOBILE NAV ── */
-  @media (max-width: 680px) {
-    .sidebar { display: none; }
-    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; width: 100%; z-index: 100; }
-    .topbar { padding: 12px 16px; }
-    .content { padding: 16px; }
-    .cards-grid { grid-template-columns: 1fr; }
-    .editor-layout { flex-direction: column; }
-    .editor-sides { flex-direction: row; width: 100%; }
-  }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(60px);
-    background: var(--text);
-    color: white;
-    padding: 9px 18px;
-    border-radius: 99px;
-    font-size: 13px;
-    font-weight: 500;
-    z-index: 999;
-    transition: transform 0.3s ease;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-
-  .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-
 <div class="layout">
   <!-- SIDEBAR -->
-  <div class="sidebar" id="sidebar">
+  <div class="sidebar">
+    <!-- Header -->
     <div class="sidebar-header">
       <div class="app-logo">
-        <div class="logo-mark">✦</div>
-        <span class="logo-text">Flashcards</span>
+        <div class="logo-mark">📚</div>
+        <div class="logo-text">Flashcards</div>
       </div>
-      <input class="global-search" id="globalSearch" type="text" placeholder="Buscar en todo..." oninput="doGlobalSearch(this)">
+      <input type="text" class="global-search" id="globalSearch" placeholder="Buscar tarjetas...">
     </div>
-    <div class="sidebar-section-label">Carpetas</div>
+
+    <!-- Folders Section -->
+    <div class="sidebar-section-label">CARPETAS</div>
     <div class="sidebar-folders" id="sidebarFolders"></div>
+
+    <!-- Footer with buttons -->
     <div class="sidebar-footer">
-      <button class="new-folder-btn" onclick="openNewFolder()">+ Nueva carpeta</button>
+      <button class="new-folder-btn" id="newFolderBtn">+ Nueva carpeta</button>
+      <button class="import-json-btn" id="importJsonBtn">📥 Importar JSON</button>
+      <input type="file" id="jsonFileInput" accept=".json">
     </div>
   </div>
 
-  <!-- MAIN -->
+  <!-- MAIN AREA -->
   <div class="main">
-
-    <!-- HOME SCREEN -->
-    <div class="screen active" id="screen-home">
-      <div class="topbar">
-        <div class="topbar-title">Mis carpetas</div>
-        <div class="topbar-actions">
-          <button class="btn btn-primary" onclick="openNewFolder()">+ Nueva carpeta</button>
-        </div>
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title">
+        <span id="topbarTitle">Inicio</span>
+        <span class="topbar-subtitle" id="topbarSubtitle"></span>
       </div>
-      <div class="content">
-        <div class="home-content" id="homeContent"></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline" id="newCardBtn" style="display: none;">+ Nueva tarjeta</button>
+        <button class="btn btn-primary" id="studyBtn" style="display: none;">Estudiar</button>
       </div>
     </div>
 
-    <!-- FOLDER SCREEN -->
-    <div class="screen" id="screen-folder">
-      <div class="topbar">
-        <div class="topbar-title" id="folderTopTitle"></div>
-        <div class="topbar-actions">
-          <button class="btn btn-teal" onclick="startStudy()">▶ Estudiar</button>
-          <button class="btn btn-primary" onclick="openNewCard()">+ Tarjeta</button>
-        </div>
-      </div>
-      <div class="content">
-        <div class="folder-search-wrap">
-          <span class="search-ic">⌕</span>
-          <input type="text" id="folderSearch" placeholder="Buscar en esta carpeta..." oninput="doFolderSearch(this)">
-          <button class="search-clear-btn" id="folderSearchClear" onclick="clearFolderSearch()">✕</button>
-        </div>
-        <div class="search-info" id="folderSearchInfo"></div>
-        <div id="cardsList"></div>
-      </div>
-    </div>
-
-    <!-- STUDY SCREEN -->
-    <div class="screen" id="screen-study">
-      <div class="topbar">
-        <div class="topbar-title">
-          <button class="btn btn-outline" onclick="goFolder()" style="font-size:13px;padding:6px 12px">‹ Volver</button>
-          <span id="studyFolderName"></span>
-        </div>
-      </div>
-      <div class="content">
-        <div class="study-wrap">
-          <div class="study-progress-row">
-            <div class="progress-track"><div class="progress-fill" id="studyBar"></div></div>
-            <span class="progress-label" id="studyCounter"></span>
-          </div>
-          <div class="study-card-scene" onclick="flipStudyCard()">
-            <div class="study-card" id="studyCard">
-              <div class="card-face front">
-                <span class="face-badge">Frente</span>
-                <div class="face-content" id="studyFront"></div>
-              </div>
-              <div class="card-face back">
-                <span class="face-badge">Reverso</span>
-                <div class="face-content" id="studyBack"></div>
-              </div>
-            </div>
-          </div>
-          <p class="flip-hint" id="flipHint">Toca la tarjeta para ver el reverso</p>
-          <div class="study-nav">
-            <button class="btn btn-outline" onclick="studyPrev()">‹ Anterior</button>
-            <button class="btn btn-primary" onclick="studyNext()">Siguiente ›</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- EDITOR SCREEN -->
-    <div class="screen" id="screen-editor">
-      <div class="topbar">
-        <div class="topbar-title" id="editorTitle">Nueva tarjeta</div>
-        <div class="topbar-actions">
-          <button class="btn btn-outline" onclick="cancelEditor()">Cancelar</button>
-          <button class="btn btn-primary" onclick="saveCard()">Guardar tarjeta</button>
-        </div>
-      </div>
-      <div class="content">
-        <div class="editor-layout">
-          <div class="editor-sides">
-            <button class="editor-side-btn active" id="sideBtn-front" onclick="switchSide('front')">Frente</button>
-            <button class="editor-side-btn" id="sideBtn-back" onclick="switchSide('back')">Reverso</button>
-          </div>
-          <div class="editor-panel-wrap">
-            <!-- FRONT -->
-            <div class="editor-panel active" id="panel-front">
-              <div>
-                <div class="field-label">Texto</div>
-                <div class="rich-editor-wrap">
-                  <div class="rich-toolbar">
-                    <button class="tb-btn" onclick="execFmt('bold')"><b>N</b></button>
-                    <button class="tb-btn" onclick="execFmt('italic')"><i>C</i></button>
-                    <button class="tb-btn" onclick="execFmt('underline')"><u>S</u></button>
-                    <div class="tb-sep"></div>
-                    <button class="tb-btn" onclick="execFmt('insertUnorderedList')">• Lista</button>
-                    <div class="tb-sep"></div>
-                    <button class="tb-btn" onclick="openEmojiPicker('front')">☺ Emoji</button>
-                    <button class="tb-btn" onclick="openLinkModal('front')">🔗 Link</button>
-                  </div>
-                  <div class="content-editable" id="frontText" contenteditable="true" data-placeholder="Escribe el frente de la tarjeta..."></div>
-                </div>
-              </div>
-              <div>
-                <div class="field-label">Imagen</div>
-                <div class="img-section">
-                  <div class="img-row">
-                    <input class="img-url-input" id="frontImgUrl" placeholder="https://... URL de imagen">
-                    <button class="btn btn-outline" style="font-size:13px;padding:7px 14px" onclick="loadImg('front')">Cargar</button>
-                  </div>
-                  <label class="upload-label" for="frontFile">📎 Subir desde dispositivo</label>
-                  <input type="file" id="frontFile" accept="image/*" onchange="handleUpload('front',this)">
-                  <div class="img-preview-wrap" id="frontPreviewWrap">
-                    <div class="img-preview-box" id="frontImgBox" style="height:160px">
-                      <img class="img-preview-el" id="frontImgEl" src="" alt="">
-                    </div>
-                    <div>
-                      <div class="field-label" style="margin-bottom:5px">Ajuste de imagen</div>
-                      <div class="fit-controls">
-                        <button class="fit-pill active" onclick="setFit('front','contain',this)">Contener</button>
-                        <button class="fit-pill" onclick="setFit('front','cover',this)">Cubrir</button>
-                        <button class="fit-pill" onclick="setFit('front','fill',this)">Llenar</button>
-                        <button class="fit-pill" onclick="setFit('front','none',this)">Original</button>
-                        <button class="fit-pill" onclick="setFit('front','scale-down',this)">Escalar</button>
-                      </div>
-                    </div>
-                    <div class="height-row">
-                      <label>Alto</label>
-                      <input type="range" min="80" max="400" step="10" value="160" oninput="setImgH('front',this.value)">
-                      <span class="height-val" id="frontHVal">160px</span>
-                    </div>
-                    <button class="remove-img-btn" onclick="removeImg('front')">✕ Quitar imagen</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- BACK -->
-            <div class="editor-panel" id="panel-back">
-              <div>
-                <div class="field-label">Texto</div>
-                <div class="rich-editor-wrap">
-                  <div class="rich-toolbar">
-                    <button class="tb-btn" onclick="execFmt2('bold')"><b>N</b></button>
-                    <button class="tb-btn" onclick="execFmt2('italic')"><i>C</i></button>
-                    <button class="tb-btn" onclick="execFmt2('underline')"><u>S</u></button>
-                    <div class="tb-sep"></div>
-                    <button class="tb-btn" onclick="execFmt2('insertUnorderedList')">• Lista</button>
-                    <div class="tb-sep"></div>
-                    <button class="tb-btn" onclick="openEmojiPicker('back')">☺ Emoji</button>
-                    <button class="tb-btn" onclick="openLinkModal('back')">🔗 Link</button>
-                  </div>
-                  <div class="content-editable" id="backText" contenteditable="true" data-placeholder="Escribe el reverso de la tarjeta..."></div>
-                </div>
-              </div>
-              <div>
-                <div class="field-label">Imagen</div>
-                <div class="img-section">
-                  <div class="img-row">
-                    <input class="img-url-input" id="backImgUrl" placeholder="https://... URL de imagen">
-                    <button class="btn btn-outline" style="font-size:13px;padding:7px 14px" onclick="loadImg('back')">Cargar</button>
-                  </div>
-                  <label class="upload-label" for="backFile">📎 Subir desde dispositivo</label>
-                  <input type="file" id="backFile" accept="image/*" onchange="handleUpload('back',this)">
-                  <div class="img-preview-wrap" id="backPreviewWrap">
-                    <div class="img-preview-box" id="backImgBox" style="height:160px">
-                      <img class="img-preview-el" id="backImgEl" src="" alt="">
-                    </div>
-                    <div>
-                      <div class="field-label" style="margin-bottom:5px">Ajuste de imagen</div>
-                      <div class="fit-controls">
-                        <button class="fit-pill active" onclick="setFit('back','contain',this)">Contener</button>
-                        <button class="fit-pill" onclick="setFit('back','cover',this)">Cubrir</button>
-                        <button class="fit-pill" onclick="setFit('back','fill',this)">Llenar</button>
-                        <button class="fit-pill" onclick="setFit('back','none',this)">Original</button>
-                        <button class="fit-pill" onclick="setFit('back','scale-down',this)">Escalar</button>
-                      </div>
-                    </div>
-                    <div class="height-row">
-                      <label>Alto</label>
-                      <input type="range" min="80" max="400" step="10" value="160" oninput="setImgH('back',this.value)">
-                      <span class="height-val" id="backHVal">160px</span>
-                    </div>
-                    <button class="remove-img-btn" onclick="removeImg('back')">✕ Quitar imagen</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <!-- Content -->
+    <div class="content" id="content"></div>
   </div>
 </div>
 
-<!-- MODAL: Nueva/Editar carpeta -->
-<div class="modal-backdrop" id="modalFolder">
+<!-- MODALS -->
+<div class="modal-backdrop" id="newFolderModal">
   <div class="modal">
     <div class="modal-head">
-      <span class="modal-title" id="folderModalTitle">Nueva carpeta</span>
-      <button class="modal-close" onclick="closeModal('modalFolder')">✕</button>
+      <div class="modal-title">Nueva carpeta</div>
+      <button class="modal-close" data-close="newFolderModal">✕</button>
     </div>
     <div class="modal-body">
       <div>
         <div class="field-label">Nombre</div>
-        <input class="form-input" id="folderNameInput" placeholder="Ej: Biología, Historia, Idiomas...">
+        <input type="text" class="form-input" id="folderNameInput" placeholder="Mi carpeta...">
       </div>
       <div>
-        <div class="field-label">Ícono</div>
-        <div class="emoji-grid" id="folderEmojiGrid"></div>
-      </div>
-      <div>
-        <div class="field-label">Color</div>
-        <div class="color-grid" id="folderColorGrid"></div>
+        <div class="field-label">Emoji</div>
+        <div class="emoji-grid" id="emojiGrid"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modalFolder')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveFolder()">Guardar</button>
+      <button class="btn btn-outline" data-close="newFolderModal">Cancelar</button>
+      <button class="btn btn-primary" id="createFolderBtn">Crear</button>
     </div>
   </div>
 </div>
-
-<!-- MODAL: Emoji picker -->
-<div class="modal-backdrop" id="modalEmoji">
-  <div class="modal" style="max-width:340px">
-    <div class="modal-head">
-      <span class="modal-title">Insertar emoji</span>
-      <button class="modal-close" onclick="closeModal('modalEmoji')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="emoji-grid" id="emojiPickerGrid"></div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: Link -->
-<div class="modal-backdrop" id="modalLink">
-  <div class="modal" style="max-width:360px">
-    <div class="modal-head">
-      <span class="modal-title">Insertar enlace</span>
-      <button class="modal-close" onclick="closeModal('modalLink')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div>
-        <div class="field-label">Texto visible</div>
-        <input class="form-input" id="linkText" placeholder="Ej: Ver documento">
-      </div>
-      <div>
-        <div class="field-label">URL</div>
-        <input class="form-input" id="linkUrl" placeholder="https://...">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modalLink')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmLink()">Insertar</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
 
 <script>
-const FOLDER_EMOJIS = ['📚','🧬','🌍','🔢','💡','🎨','🏛️','⚗️','🖥️','🎵','🌿','🔭','📐','🗺️','🧠','💬','🌟','🔬','✈️','🍎','🏋️','🎯','📝','🔑'];
-const PICK_EMOJIS = ['😀','😂','❤️','🔥','✅','⭐','🎯','💡','📌','🚀','🧩','🌈','🔑','💎','🎉','⚡','🌙','🍀','🏆','🎓','👍','🙌','💪','🤔','😮','🥳','🤯','👀','💯','✨','🌸','🦋'];
-const COLORS = ['#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#E24B4A','#639922','#888780','#5DCAA5'];
-const COLOR_LIGHTS = ['#EEEDFE','#E1F5EE','#FAECE7','#E6F1FB','#FBEAF0','#FAEEDA','#FCEBEB','#EAF3DE','#F1EFE8','#E1F5EE'];
+  // ────── ESTADOS ──────
+  const EMOJIS = ['📋', '🏥', '📖', '💊', '🔬', '⚗️', '🧪', '📝', '✏️', '🎓', '📚', '🏆', '⭐', '💡', '🎯', '📊', '🧬', '🔭', '💻', '🌐', '🧠', '📡', '🎨', '🎭', '🎪', '🎬', '🎤', '🎸', '🎹'];
+  let currentFolder = null;
+  let currentCardIndex = 0;
+  let isStudyMode = false;
 
-let S = {
-  folders: [],
-  curFolderId: null,
-  editingCardId: null,
-  editingFolderId: null,
-  studyCards: [],
-  studyIdx: 0,
-  studyFlipped: false,
-  selEmoji: FOLDER_EMOJIS[0],
-  selColor: 0,
-  emojiTarget: 'front',
-  linkTarget: 'front',
-  imgState: {
-    front: { url:'', fit:'contain', h:160 },
-    back: { url:'', fit:'contain', h:160 }
-  }
-};
-
-function persist() {
-  try { localStorage.setItem('fc_data', JSON.stringify(S.folders)); } catch(e){}
-}
-
-function restore() {
-  try {
-    const d = localStorage.getItem('fc_data');
-    if (d) S.folders = JSON.parse(d);
-  } catch(e){}
-}
-
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
-
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-'+id).classList.add('active');
-}
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2200);
-}
-
-// ── SIDEBAR ──
-function renderSidebar() {
-  const el = document.getElementById('sidebarFolders');
-  el.innerHTML = '';
-  S.folders.forEach(f => {
-    const row = document.createElement('div');
-    row.className = 'folder-row' + (f.id === S.curFolderId ? ' active' : '');
-    row.innerHTML = `
-      <span class="folder-row-emoji">${f.emoji||'📁'}</span>
-      <span class="folder-row-name">${esc(f.name)}</span>
-      <span class="folder-row-count">${f.cards.length}</span>
-      <button class="folder-row-edit" onclick="event.stopPropagation();editFolder('${f.id}')" title="Editar">✎</button>
-    `;
-    row.addEventListener('click', () => openFolder(f.id));
-    el.appendChild(row);
+  // ────── INICIALIZACIÓN ──────
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeData();
+    renderSidebar();
+    showHome();
+    setupEventListeners();
   });
-}
 
-// ── HOME ──
-function renderHome(filter) {
-  const el = document.getElementById('homeContent');
-  el.innerHTML = '';
-  if (!S.folders.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📁</div><h2>Sin carpetas aún</h2><p>Crea tu primera carpeta para empezar<br>a organizar tus flashcards.</p></div>`;
-    return;
+  // ────── FUNCIONES DE DATOS ──────
+  function initializeData() {
+    if (!localStorage.getItem('fc_data')) {
+      localStorage.setItem('fc_data', JSON.stringify({ folders: [] }));
+    }
   }
-  if (filter) {
-    const q = filter.toLowerCase();
-    const results = [];
-    S.folders.forEach(f => {
-      const matches = f.cards.filter(c => stripHTML(c.frontText||'').toLowerCase().includes(q) || stripHTML(c.backText||'').toLowerCase().includes(q));
-      if (matches.length) results.push({ folder: f, matches });
+
+  function getData() {
+    return JSON.parse(localStorage.getItem('fc_data') || '{"folders":[]}');
+  }
+
+  function setData(data) {
+    localStorage.setItem('fc_data', JSON.stringify(data));
+  }
+
+  // ────── IMPORTAR JSON ──────
+  document.getElementById('importJsonBtn').addEventListener('click', () => {
+    document.getElementById('jsonFileInput').click();
+  });
+
+  document.getElementById('jsonFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        
+        // Validar estructura
+        if (!importedData.folders || !Array.isArray(importedData.folders)) {
+          alert('⚠️ Formato de JSON inválido. Debe contener un array "folders".');
+          return;
+        }
+
+        // Combinar datos
+        const currentData = getData();
+        
+        // Combinar carpetas
+        importedData.folders.forEach(importedFolder => {
+          const existingFolderIndex = currentData.folders.findIndex(f => f.id === importedFolder.id);
+          
+          if (existingFolderIndex !== -1) {
+            // Combinar tarjetas si la carpeta existe
+            const existingCards = currentData.folders[existingFolderIndex].cards || [];
+            const newCards = importedFolder.cards || [];
+            
+            const cardIds = new Set(existingCards.map(c => c.id));
+            const mergedCards = [...existingCards, ...newCards.filter(c => !cardIds.has(c.id))];
+            
+            currentData.folders[existingFolderIndex].cards = mergedCards;
+          } else {
+            // Agregar carpeta nueva
+            currentData.folders.push(importedFolder);
+          }
+        });
+
+        setData(currentData);
+        renderSidebar();
+        
+        alert('✅ JSON importado exitosamente. Tus datos se han combinado correctamente.');
+        
+        // Limpiar input
+        document.getElementById('jsonFileInput').value = '';
+      } catch (error) {
+        alert('❌ Error al procesar el archivo JSON: ' + error.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // ────── SIDEBAR ──────
+  function renderSidebar() {
+    const data = getData();
+    const container = document.getElementById('sidebarFolders');
+    container.innerHTML = '';
+
+    data.folders.forEach(folder => {
+      const count = folder.cards?.length || 0;
+      const el = document.createElement('div');
+      el.className = 'folder-row' + (currentFolder?.id === folder.id ? ' active' : '');
+      el.innerHTML = `
+        <span class="folder-row-emoji">${folder.emoji}</span>
+        <span class="folder-row-name">${folder.name}</span>
+        <span class="folder-row-count">${count}</span>
+        <button class="folder-row-edit" data-edit="${folder.id}">✎</button>
+      `;
+      el.addEventListener('click', () => showFolder(folder));
+      el.querySelector('.folder-row-edit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        editFolder(folder);
+      });
+      container.appendChild(el);
     });
-    if (!results.length) {
-      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h2>Sin resultados</h2><p>No se encontró "<strong>${esc(filter)}</strong>" en ninguna tarjeta.</p></div>`;
+  }
+
+  // ────── CARPETAS ──────
+  function showFolder(folder) {
+    currentFolder = folder;
+    currentCardIndex = 0;
+    renderSidebar();
+    renderContent();
+  }
+
+  function showHome() {
+    currentFolder = null;
+    currentCardIndex = 0;
+    renderContent();
+  }
+
+  function renderContent() {
+    const content = document.getElementById('content');
+    const topbarTitle = document.getElementById('topbarTitle');
+    const topbarSubtitle = document.getElementById('topbarSubtitle');
+    const newCardBtn = document.getElementById('newCardBtn');
+    const studyBtn = document.getElementById('studyBtn');
+
+    if (!currentFolder) {
+      // HOME VIEW
+      topbarTitle.textContent = 'Inicio';
+      topbarSubtitle.textContent = '';
+      newCardBtn.style.display = 'none';
+      studyBtn.style.display = 'none';
+
+      const data = getData();
+      if (data.folders.length === 0) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h2>Crea tu primera carpeta</h2>
+            <p>Organiza tus tarjetas en carpetas para estudiar de forma efectiva.</p>
+          </div>
+        `;
+        return;
+      }
+
+      content.innerHTML = '<div class="home-content"></div>';
+      const homeContent = content.querySelector('.home-content');
+
+      data.folders.forEach(folder => {
+        const count = folder.cards?.length || 0;
+        const card = document.createElement('div');
+        card.className = 'home-folder-card';
+        card.innerHTML = `
+          <div class="home-folder-icon">${folder.emoji}</div>
+          <div class="home-folder-info">
+            <div class="home-folder-name">${folder.name}</div>
+            <div class="home-folder-meta">${count} tarjeta${count !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="home-folder-actions">
+            <button class="icon-btn" data-delete="${folder.id}">🗑️</button>
+          </div>
+        `;
+        card.addEventListener('click', (e) => {
+          if (!e.target.closest('.icon-btn')) showFolder(folder);
+        });
+        card.querySelector('.icon-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm('¿Eliminar esta carpeta?')) deleteFolder(folder.id);
+        });
+        homeContent.appendChild(card);
+      });
       return;
     }
-    el.innerHTML = `<div style="margin-bottom:12px;font-size:13px;color:var(--text-2)">${results.reduce((a,r)=>a+r.matches.length,0)} resultado(s) en ${results.length} carpeta(s)</div>`;
-    const wrap = document.createElement('div');
-    wrap.className = 'search-results-folders';
-    results.forEach(r => {
-      const sec = document.createElement('div');
-      const colorIdx = COLORS.indexOf(r.folder.color);
-      const light = colorIdx >= 0 ? COLOR_LIGHTS[colorIdx] : '#EEEDFE';
-      sec.innerHTML = `<div class="result-folder-header"><span style="font-size:18px">${r.folder.emoji||'📁'}</span><span class="result-folder-name">${esc(r.folder.name)}</span><span style="font-size:12px;color:var(--text-3)">${r.matches.length} coincidencia(s)</span></div>`;
-      const grid = document.createElement('div');
-      grid.className = 'cards-grid';
-      r.matches.forEach(c => {
-        const card = buildCardItem(c, r.folder.id, q);
-        grid.appendChild(card);
+
+    // FOLDER VIEW
+    topbarTitle.textContent = currentFolder.name;
+    newCardBtn.style.display = 'inline-block';
+    studyBtn.style.display = 'inline-block';
+
+    const cards = currentFolder.cards || [];
+    topbarSubtitle.textContent = `${cards.length} tarjeta${cards.length !== 1 ? 's' : ''}`;
+
+    if (cards.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <h2>Sin tarjetas</h2>
+          <p>Crea una nueva tarjeta para comenzar.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'cards-grid';
+    cards.forEach((card, idx) => {
+      const el = document.createElement('div');
+      el.className = 'card-item';
+      el.innerHTML = `
+        <div class="card-item-front">
+          <span class="side-tag tag-front">FRENTE</span>
+          <div class="card-item-text">${escapeHtml(card.front)}</div>
+          <div class="card-item-subtext">${escapeHtml(card.back)}</div>
+        </div>
+        <div class="card-item-back">
+          <span class="side-tag tag-back">REVERSO</span>
+          <div class="card-item-text">${escapeHtml(card.back)}</div>
+        </div>
+        <div class="card-item-actions">
+          <button class="card-act-btn" data-edit="${idx}">Editar</button>
+          <button class="card-act-btn danger" data-delete="${idx}">Eliminar</button>
+        </div>
+      `;
+      el.querySelector('[data-edit]').addEventListener('click', () => editCard(idx));
+      el.querySelector('[data-delete]').addEventListener('click', () => {
+        if (confirm('¿Eliminar tarjeta?')) deleteCard(idx);
       });
-      sec.appendChild(grid);
-      wrap.appendChild(sec);
+      grid.appendChild(el);
     });
-    el.appendChild(wrap);
-    return;
+    content.innerHTML = '';
+    content.appendChild(grid);
   }
-  const grid = document.createElement('div');
-  grid.className = 'cards-grid';
-  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
-  S.folders.forEach(f => {
-    const colorIdx = COLORS.indexOf(f.color);
-    const light = colorIdx >= 0 ? COLOR_LIGHTS[colorIdx] : '#EEEDFE';
-    const div = document.createElement('div');
-    div.className = 'home-folder-card';
-    div.innerHTML = `
-      <div class="home-folder-icon" style="background:${light}">${f.emoji||'📁'}</div>
-      <div class="home-folder-info">
-        <div class="home-folder-name">${esc(f.name)}</div>
-        <div class="home-folder-meta">${f.cards.length} tarjeta${f.cards.length!==1?'s':''}</div>
-      </div>
-      <div class="home-folder-actions">
-        <button class="icon-btn" onclick="event.stopPropagation();editFolder('${f.id}')" title="Editar">✎</button>
-        <button class="icon-btn danger" onclick="event.stopPropagation();deleteFolder('${f.id}')" title="Eliminar">🗑</button>
-      </div>
-      <span class="chevron">›</span>
-    `;
-    div.addEventListener('click', () => openFolder(f.id));
-    grid.appendChild(div);
+
+  // ────── CARPETAS CRUD ──────
+  document.getElementById('newFolderBtn').addEventListener('click', () => {
+    document.getElementById('folderNameInput').value = '';
+    document.getElementById('emojiGrid').innerHTML = '';
+    EMOJIS.forEach(emoji => {
+      const btn = document.createElement('button');
+      btn.className = 'emoji-opt';
+      btn.textContent = emoji;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.emoji-opt').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+      document.getElementById('emojiGrid').appendChild(btn);
+    });
+    document.getElementById('emojiGrid').firstChild.classList.add('selected');
+    document.getElementById('newFolderModal').classList.add('open');
   });
-  el.appendChild(grid);
-}
 
-// ── FOLDERS ──
-function openFolder(id) {
-  S.curFolderId = id;
-  const f = S.folders.find(x=>x.id===id);
-  document.getElementById('folderTopTitle').textContent = (f.emoji||'') + ' ' + f.name;
-  document.getElementById('folderSearch').value = '';
-  document.getElementById('folderSearchInfo').style.display = 'none';
-  document.getElementById('folderSearchClear').style.display = 'none';
-  showScreen('folder');
-  renderSidebar();
-  renderCards();
-}
+  document.getElementById('createFolderBtn').addEventListener('click', () => {
+    const name = document.getElementById('folderNameInput').value.trim();
+    const selected = document.querySelector('.emoji-opt.selected');
+    if (!name) return alert('Nombre requerido');
 
-function openNewFolder() {
-  S.editingFolderId = null;
-  S.selEmoji = FOLDER_EMOJIS[0];
-  S.selColor = 0;
-  document.getElementById('folderNameInput').value = '';
-  document.getElementById('folderModalTitle').textContent = 'Nueva carpeta';
-  renderFolderEmojis();
-  renderFolderColors();
-  openModal('modalFolder');
-}
-
-function editFolder(id) {
-  const f = S.folders.find(x=>x.id===id);
-  S.editingFolderId = id;
-  S.selEmoji = f.emoji || FOLDER_EMOJIS[0];
-  S.selColor = COLORS.indexOf(f.color);
-  if (S.selColor < 0) S.selColor = 0;
-  document.getElementById('folderNameInput').value = f.name;
-  document.getElementById('folderModalTitle').textContent = 'Editar carpeta';
-  renderFolderEmojis();
-  renderFolderColors();
-  openModal('modalFolder');
-}
-
-function saveFolder() {
-  const name = document.getElementById('folderNameInput').value.trim();
-  if (!name) { document.getElementById('folderNameInput').focus(); return; }
-  if (S.editingFolderId) {
-    const f = S.folders.find(x=>x.id===S.editingFolderId);
-    f.name = name; f.emoji = S.selEmoji; f.color = COLORS[S.selColor];
-    toast('Carpeta actualizada');
-  } else {
-    S.folders.push({ id: uid(), name, emoji: S.selEmoji, color: COLORS[S.selColor], cards: [] });
-    toast('Carpeta creada');
-  }
-  persist();
-  closeModal('modalFolder');
-  renderSidebar();
-  renderHome();
-}
-
-function deleteFolder(id) {
-  if (!confirm('¿Eliminar esta carpeta y todas sus tarjetas?')) return;
-  S.folders = S.folders.filter(x=>x.id!==id);
-  persist();
-  renderSidebar();
-  renderHome();
-  toast('Carpeta eliminada');
-}
-
-function renderFolderEmojis() {
-  const g = document.getElementById('folderEmojiGrid');
-  g.innerHTML = FOLDER_EMOJIS.map(e => `<span class="emoji-opt${e===S.selEmoji?' selected':''}" onclick="selectFolderEmoji('${e}')">${e}</span>`).join('');
-}
-
-function selectFolderEmoji(e) { S.selEmoji = e; renderFolderEmojis(); }
-
-function renderFolderColors() {
-  const g = document.getElementById('folderColorGrid');
-  g.innerHTML = COLORS.map((c,i) => `<div class="color-swatch${i===S.selColor?' selected':''}" style="background:${c}" onclick="selectColor(${i})"></div>`).join('');
-}
-
-function selectColor(i) { S.selColor = i; renderFolderColors(); }
-
-// ── CARDS ──
-function curFolder() { return S.folders.find(x=>x.id===S.curFolderId); }
-
-function renderCards(filter) {
-  const f = curFolder();
-  const el = document.getElementById('cardsList');
-  el.innerHTML = '';
-  const cards = filter ? f.cards.filter(c => stripHTML(c.frontText||'').toLowerCase().includes(filter.toLowerCase()) || stripHTML(c.backText||'').toLowerCase().includes(filter.toLowerCase())) : f.cards;
-  if (!cards.length) {
-    el.innerHTML = filter
-      ? `<div class="empty-state"><div class="empty-icon">🔍</div><h2>Sin resultados</h2><p>No hay tarjetas con ese texto.</p></div>`
-      : `<div class="empty-state"><div class="empty-icon">✦</div><h2>Sin tarjetas</h2><p>Agrega tu primera tarjeta a esta carpeta.</p></div>`;
-    return;
-  }
-  const grid = document.createElement('div');
-  grid.className = 'cards-grid';
-  cards.forEach(c => grid.appendChild(buildCardItem(c, S.curFolderId, filter)));
-  el.appendChild(grid);
-}
-
-function buildCardItem(c, folderId, filter) {
-  const div = document.createElement('div');
-  div.className = 'card-item';
-  const ft = filter ? hlText(stripHTML(c.frontText||''), filter) : (stripHTML(c.frontText||'') || '<em style="color:var(--text-3)">Sin texto</em>');
-  const bt = filter ? hlText(stripHTML(c.backText||''), filter) : (stripHTML(c.backText||'') || '<em style="color:var(--text-3)">Sin texto</em>');
-  div.innerHTML = `
-    <div class="card-item-front">
-      <div class="side-tag tag-front">Frente</div>
-      <div class="card-item-text">${ft}</div>
-      ${c.frontImg ? `<div class="card-item-meta">📷 Con imagen</div>` : ''}
-    </div>
-    <div class="card-item-back">
-      <div class="side-tag tag-back">Reverso</div>
-      <div class="card-item-subtext">${bt}</div>
-      ${c.backImg ? `<div class="card-item-meta">📷 Con imagen</div>` : ''}
-    </div>
-    <div class="card-item-actions">
-      <button class="card-act-btn" onclick="editCard('${c.id}','${folderId}')">✎ Editar</button>
-      <button class="card-act-btn danger" onclick="deleteCard('${c.id}','${folderId}')">🗑 Eliminar</button>
-    </div>
-  `;
-  return div;
-}
-
-function openNewCard() {
-  S.editingCardId = null;
-  document.getElementById('editorTitle').textContent = 'Nueva tarjeta';
-  document.getElementById('frontText').innerHTML = '';
-  document.getElementById('backText').innerHTML = '';
-  S.imgState = { front:{url:'',fit:'contain',h:160}, back:{url:'',fit:'contain',h:160} };
-  resetImgPreview('front');
-  resetImgPreview('back');
-  switchSide('front');
-  showScreen('editor');
-}
-
-function editCard(id, folderId) {
-  const f = S.folders.find(x=>x.id===folderId);
-  const c = f.cards.find(x=>x.id===id);
-  S.editingCardId = id;
-  S.curFolderId = folderId;
-  document.getElementById('editorTitle').textContent = 'Editar tarjeta';
-  document.getElementById('frontText').innerHTML = c.frontText || '';
-  document.getElementById('backText').innerHTML = c.backText || '';
-  S.imgState = {
-    front: { url: c.frontImg||'', fit: c.frontFit||'contain', h: c.frontH||160 },
-    back: { url: c.backImg||'', fit: c.backFit||'contain', h: c.backH||160 }
-  };
-  if (c.frontImg) showImgPreview('front', c.frontImg, c.frontFit||'contain', c.frontH||160);
-  else resetImgPreview('front');
-  if (c.backImg) showImgPreview('back', c.backImg, c.backFit||'contain', c.backH||160);
-  else resetImgPreview('back');
-  switchSide('front');
-  showScreen('editor');
-}
-
-function saveCard() {
-  const f = curFolder();
-  const frontText = document.getElementById('frontText').innerHTML;
-  const backText = document.getElementById('backText').innerHTML;
-  if (!stripHTML(frontText).trim() && !stripHTML(backText).trim() && !S.imgState.front.url && !S.imgState.back.url) {
-    toast('Agrega algo a la tarjeta antes de guardar');
-    return;
-  }
-  const fi = S.imgState.front, bi = S.imgState.back;
-  if (S.editingCardId) {
-    const c = f.cards.find(x=>x.id===S.editingCardId);
-    c.frontText=frontText; c.backText=backText;
-    c.frontImg=fi.url; c.frontFit=fi.fit; c.frontH=fi.h;
-    c.backImg=bi.url; c.backFit=bi.fit; c.backH=bi.h;
-    toast('Tarjeta actualizada');
-  } else {
-    f.cards.push({ id:uid(), frontText, backText, frontImg:fi.url, frontFit:fi.fit, frontH:fi.h, backImg:bi.url, backFit:bi.fit, backH:bi.h });
-    toast('Tarjeta creada');
-  }
-  persist();
-  renderSidebar();
-  goFolder();
-}
-
-function cancelEditor() { goFolder(); }
-
-function deleteCard(id, folderId) {
-  if (!confirm('¿Eliminar esta tarjeta?')) return;
-  const f = S.folders.find(x=>x.id===folderId);
-  f.cards = f.cards.filter(x=>x.id!==id);
-  persist();
-  renderSidebar();
-  renderCards(document.getElementById('folderSearch').value.trim() || undefined);
-  toast('Tarjeta eliminada');
-}
-
-// ── EDITOR ──
-function switchSide(side) {
-  ['front','back'].forEach(s => {
-    document.getElementById('sideBtn-'+s).classList.toggle('active', s===side);
-    document.getElementById('panel-'+s).classList.toggle('active', s===side);
-  });
-}
-
-function execFmt(cmd) { document.getElementById('frontText').focus(); document.execCommand(cmd, false, null); }
-function execFmt2(cmd) { document.getElementById('backText').focus(); document.execCommand(cmd, false, null); }
-
-function openEmojiPicker(target) {
-  S.emojiTarget = target;
-  document.getElementById('emojiPickerGrid').innerHTML = PICK_EMOJIS.map(e => `<span class="emoji-opt" onclick="insertEmoji('${e}')">${e}</span>`).join('');
-  openModal('modalEmoji');
-}
-
-function insertEmoji(e) {
-  const ed = document.getElementById(S.emojiTarget+'Text');
-  ed.focus();
-  document.execCommand('insertText', false, e);
-  closeModal('modalEmoji');
-}
-
-function openLinkModal(target) {
-  S.linkTarget = target;
-  document.getElementById('linkText').value = '';
-  document.getElementById('linkUrl').value = '';
-  openModal('modalLink');
-}
-
-function confirmLink() {
-  const text = document.getElementById('linkText').value || document.getElementById('linkUrl').value;
-  const url = document.getElementById('linkUrl').value.trim();
-  if (!url) return;
-  const ed = document.getElementById(S.linkTarget+'Text');
-  ed.focus();
-  document.execCommand('insertHTML', false, `<a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">${text}</a>`);
-  closeModal('modalLink');
-}
-
-// ── IMAGES ──
-function loadImg(side) {
-  const url = document.getElementById(side+'ImgUrl').value.trim();
-  if (!url) return;
-  S.imgState[side].url = url;
-  showImgPreview(side, url, S.imgState[side].fit, S.imgState[side].h);
-}
-
-function handleUpload(side, input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const url = e.target.result;
-    S.imgState[side].url = url;
-    showImgPreview(side, url, S.imgState[side].fit, S.imgState[side].h);
-  };
-  reader.readAsDataURL(file);
-}
-
-function showImgPreview(side, url, fit, h) {
-  const wrap = document.getElementById(side+'PreviewWrap');
-  const img = document.getElementById(side+'ImgEl');
-  const box = document.getElementById(side+'ImgBox');
-  img.src = url;
-  img.style.objectFit = fit;
-  img.style.height = h+'px';
-  box.style.height = h+'px';
-  wrap.style.display = 'flex';
-  document.getElementById(side+'HVal').textContent = h+'px';
-  const range = document.querySelector(`#panel-${side} .height-row input[type=range]`);
-  if (range) range.value = h;
-  document.querySelectorAll(`#panel-${side} .fit-pill`).forEach(b => {
-    const map = { contain:'contener', cover:'cubrir', fill:'llenar', none:'original', 'scale-down':'escalar' };
-    b.classList.toggle('active', b.textContent.toLowerCase() === (map[fit]||fit));
-  });
-}
-
-function resetImgPreview(side) {
-  document.getElementById(side+'PreviewWrap').style.display = 'none';
-  document.getElementById(side+'ImgUrl').value = '';
-  const f = document.getElementById(side+'File');
-  if (f) f.value = '';
-}
-
-function removeImg(side) {
-  S.imgState[side].url = '';
-  resetImgPreview(side);
-}
-
-function setFit(side, fit, btn) {
-  S.imgState[side].fit = fit;
-  document.getElementById(side+'ImgEl').style.objectFit = fit;
-  document.querySelectorAll(`#panel-${side} .fit-pill`).forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-function setImgH(side, val) {
-  S.imgState[side].h = parseInt(val);
-  document.getElementById(side+'ImgEl').style.height = val+'px';
-  document.getElementById(side+'ImgBox').style.height = val+'px';
-  document.getElementById(side+'HVal').textContent = val+'px';
-}
-
-// ── SEARCH ──
-function doGlobalSearch(input) {
-  const q = input.value.trim();
-  if (q) {
-    showScreen('home');
-    S.curFolderId = null;
+    const data = getData();
+    data.folders.push({
+      id: Date.now(),
+      name,
+      emoji: selected.textContent,
+      cards: []
+    });
+    setData(data);
     renderSidebar();
-    renderHome(q);
-  } else {
-    renderHome();
+    document.getElementById('newFolderModal').classList.remove('open');
+  });
+
+  function editFolder(folder) {
+    const newName = prompt('Nuevo nombre:', folder.name);
+    if (newName !== null && newName.trim()) {
+      const data = getData();
+      const f = data.folders.find(x => x.id === folder.id);
+      if (f) f.name = newName.trim();
+      setData(data);
+      currentFolder = f;
+      renderSidebar();
+      renderContent();
+    }
   }
-}
 
-function doFolderSearch(input) {
-  const q = input.value.trim();
-  const info = document.getElementById('folderSearchInfo');
-  const clearBtn = document.getElementById('folderSearchClear');
-  clearBtn.style.display = q ? 'block' : 'none';
-  if (!q) { info.style.display='none'; renderCards(); return; }
-  const f = curFolder();
-  const count = f.cards.filter(c => stripHTML(c.frontText||'').toLowerCase().includes(q.toLowerCase()) || stripHTML(c.backText||'').toLowerCase().includes(q.toLowerCase())).length;
-  info.style.display = 'block';
-  info.textContent = `${count} resultado${count!==1?'s':''}`;
-  renderCards(q);
-}
-
-function clearFolderSearch() {
-  document.getElementById('folderSearch').value = '';
-  document.getElementById('folderSearchClear').style.display = 'none';
-  document.getElementById('folderSearchInfo').style.display = 'none';
-  renderCards();
-}
-
-// ── STUDY ──
-function startStudy() {
-  const f = curFolder();
-  if (!f.cards.length) { toast('Agrega tarjetas primero'); return; }
-  S.studyCards = [...f.cards];
-  S.studyIdx = 0;
-  S.studyFlipped = false;
-  document.getElementById('studyFolderName').textContent = (f.emoji||'') + ' ' + f.name;
-  showScreen('study');
-  renderStudyCard();
-}
-
-function renderStudyCard() {
-  const c = S.studyCards[S.studyIdx];
-  const total = S.studyCards.length;
-  document.getElementById('studyBar').style.width = ((S.studyIdx+1)/total*100)+'%';
-  document.getElementById('studyCounter').textContent = `${S.studyIdx+1} / ${total}`;
-  document.getElementById('studyCard').classList.remove('flipped');
-  S.studyFlipped = false;
-  document.getElementById('flipHint').style.display = 'block';
-
-  const front = document.getElementById('studyFront');
-  const back = document.getElementById('studyBack');
-  front.innerHTML = '';
-  back.innerHTML = '';
-
-  if (c.frontText) { const d=document.createElement('div'); d.innerHTML=c.frontText; d.style.fontSize='20px'; d.style.fontWeight='500'; d.style.letterSpacing='-0.02em'; front.appendChild(d); }
-  if (c.frontImg) {
-    const img=document.createElement('img'); img.className='face-img';
-    img.src=c.frontImg; img.style.objectFit=c.frontFit||'contain'; img.style.maxHeight=(c.frontH||160)+'px';
-    front.appendChild(img);
+  function deleteFolder(id) {
+    const data = getData();
+    data.folders = data.folders.filter(f => f.id !== id);
+    setData(data);
+    showHome();
+    renderSidebar();
   }
-  if (c.backText) { const d=document.createElement('div'); d.innerHTML=c.backText; d.style.fontSize='18px'; d.style.fontWeight='500'; d.style.letterSpacing='-0.02em'; back.appendChild(d); }
-  if (c.backImg) {
-    const img=document.createElement('img'); img.className='face-img';
-    img.src=c.backImg; img.style.objectFit=c.backFit||'contain'; img.style.maxHeight=(c.backH||160)+'px';
-    back.appendChild(img);
+
+  // ─���──── TARJETAS CRUD ──────
+  document.getElementById('newCardBtn').addEventListener('click', () => {
+    editCard(null);
+  });
+
+  function editCard(idx) {
+    const card = idx !== null ? currentFolder.cards[idx] : { front: '', back: '' };
+    const front = prompt('Frente:', card.front);
+    if (front === null) return;
+    const back = prompt('Reverso:', card.back);
+    if (back === null) return;
+
+    const data = getData();
+    const folder = data.folders.find(f => f.id === currentFolder.id);
+    if (!folder.cards) folder.cards = [];
+
+    if (idx !== null) {
+      folder.cards[idx] = { id: folder.cards[idx].id, front, back };
+    } else {
+      folder.cards.push({ id: Date.now(), front, back });
+    }
+
+    setData(data);
+    currentFolder = folder;
+    renderContent();
   }
-}
 
-function flipStudyCard() {
-  S.studyFlipped = !S.studyFlipped;
-  document.getElementById('studyCard').classList.toggle('flipped', S.studyFlipped);
-  document.getElementById('flipHint').style.display = S.studyFlipped ? 'none' : 'block';
-}
+  function deleteCard(idx) {
+    const data = getData();
+    const folder = data.folders.find(f => f.id === currentFolder.id);
+    folder.cards.splice(idx, 1);
+    setData(data);
+    currentFolder = folder;
+    renderContent();
+  }
 
-function studyNext() {
-  if (S.studyIdx < S.studyCards.length-1) { S.studyIdx++; renderStudyCard(); }
-  else { toast('¡Completaste todas las tarjetas!'); goFolder(); }
-}
+  // ────── UTILIDADES ──────
+  function escapeHtml(text) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, m => map[m]);
+  }
 
-function studyPrev() {
-  if (S.studyIdx > 0) { S.studyIdx--; renderStudyCard(); }
-}
+  // ────── EVENT LISTENERS ──────
+  function setupEventListeners() {
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const modalId = btn.dataset.close;
+        document.getElementById(modalId).classList.remove('open');
+      });
+    });
 
-// ── NAV ──
-function goFolder() {
-  showScreen('folder');
-  renderCards();
-}
+    document.getElementById('globalSearch').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      if (!query) {
+        showHome();
+        return;
+      }
 
-// ── MODALS ──
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+      const data = getData();
+      const results = [];
+      data.folders.forEach(folder => {
+        const matchedCards = (folder.cards || []).filter(
+          card => card.front.toLowerCase().includes(query) || card.back.toLowerCase().includes(query)
+        );
+        if (matchedCards.length > 0) {
+          results.push({ folder, matchedCards });
+        }
+      });
 
-document.querySelectorAll('.modal-backdrop').forEach(b => {
-  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
-});
+      const content = document.getElementById('content');
+      if (results.length === 0) {
+        content.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h2>Sin resultados</h2></div>';
+        return;
+      }
 
-// ── UTILS ──
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function stripHTML(html) { const d=document.createElement('div'); d.innerHTML=html; return d.textContent||d.innerText||''; }
-function hlText(text, q) {
-  if (!q) return esc(text);
-  return esc(text).replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark class="hl">$1</mark>');
-}
+      content.innerHTML = '';
+      results.forEach(({ folder, matchedCards }) => {
+        const section = document.createElement('div');
+        section.className = 'search-results-folders';
+        
+        const header = document.createElement('div');
+        header.className = 'result-folder-header';
+        header.innerHTML = `<span class="result-folder-name">${folder.emoji} ${folder.name}</span>`;
+        section.appendChild(header);
 
-// ── INIT ──
-restore();
-renderSidebar();
-renderHome();
+        matchedCards.forEach(card => {
+          const el = document.createElement('div');
+          el.className = 'home-folder-card';
+          el.innerHTML = `
+            <div class="home-folder-info">
+              <div class="home-folder-name">${escapeHtml(card.front)}</div>
+              <div class="home-folder-meta">${escapeHtml(card.back)}</div>
+            </div>
+          `;
+          el.style.cursor = 'pointer';
+          el.addEventListener('click', () => {
+            showFolder(folder);
+            document.getElementById('globalSearch').value = '';
+          });
+          section.appendChild(el);
+        });
+
+        content.appendChild(section);
+      });
+    });
+
+    document.getElementById('studyBtn').addEventListener('click', () => {
+      const cards = currentFolder.cards || [];
+      if (cards.length === 0) return;
+      
+      isStudyMode = true;
+      currentCardIndex = 0;
+      
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="study-wrap">
+          <div class="study-progress-row">
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-label"><span id="current">1</span>/<span id="total">${cards.length}</span></span>
+          </div>
+          <div class="study-card-scene" id="cardScene">
+            <div class="study-card" id="card">
+              <div class="card-face">
+                <span class="face-badge">FRENTE</span>
+                <div class="face-content">
+                  <div class="face-text" id="frontText">${escapeHtml(cards[0].front)}</div>
+                </div>
+                <p class="flip-hint">Haz clic para voltear</p>
+              </div>
+              <div class="card-face back">
+                <span class="face-badge">REVERSO</span>
+                <div class="face-content">
+                  <div class="face-text" id="backText">${escapeHtml(cards[0].back)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="study-nav">
+            <button class="btn btn-outline" id="prevBtn">← Anterior</button>
+            <button class="btn btn-outline" id="exitBtn">Salir</button>
+            <button class="btn btn-outline" id="nextBtn">Siguiente →</button>
+          </div>
+        </div>
+      `;
+
+      updateStudyProgress();
+
+      const card = document.getElementById('card');
+      card.addEventListener('click', () => card.classList.toggle('flipped'));
+
+      document.getElementById('prevBtn').addEventListener('click', () => {
+        if (currentCardIndex > 0) {
+          currentCardIndex--;
+          updateStudyCard();
+        }
+      });
+
+      document.getElementById('nextBtn').addEventListener('click', () => {
+        if (currentCardIndex < cards.length - 1) {
+          currentCardIndex++;
+          updateStudyCard();
+        }
+      });
+
+      document.getElementById('exitBtn').addEventListener('click', () => {
+        isStudyMode = false;
+        renderContent();
+      });
+    });
+  }
+
+  function updateStudyCard() {
+    const cards = currentFolder.cards;
+    const card = cards[currentCardIndex];
+    document.getElementById('frontText').textContent = escapeHtml(card.front);
+    document.getElementById('backText').textContent = escapeHtml(card.back);
+    document.getElementById('current').textContent = currentCardIndex + 1;
+    document.getElementById('card').classList.remove('flipped');
+    updateStudyProgress();
+  }
+
+  function updateStudyProgress() {
+    const cards = currentFolder.cards;
+    const progress = ((currentCardIndex + 1) / cards.length) * 100;
+    document.getElementById('progressFill').style.width = progress + '%';
+  }
 </script>
 </body>
 </html>
