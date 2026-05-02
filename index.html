@@ -1096,7 +1096,14 @@
   }
 
   function getData() {
-    return JSON.parse(localStorage.getItem('fc_data') || '{"folders":[]}');
+    try {
+      const data = JSON.parse(localStorage.getItem('fc_data') || '{"folders":[]}');
+      if (!data.folders) data.folders = [];
+      return data;
+    } catch (e) {
+      console.error('Error parsing localStorage:', e);
+      return { folders: [] };
+    }
   }
 
   function setData(data) {
@@ -1123,20 +1130,29 @@
           return;
         }
 
-        // Combinar datos
-        const currentData = getData();
+        // Obtener datos actuales de forma segura
+        let currentData = getData();
         
+        // Asegurar que folders existe y es un array
+        if (!currentData.folders || !Array.isArray(currentData.folders)) {
+          currentData.folders = [];
+        }
+
         // Combinar carpetas
         importedData.folders.forEach(importedFolder => {
-          const existingFolderIndex = currentData.folders.findIndex(f => f.id === importedFolder.id);
+          // Asegurar que la carpeta importada tiene estructura básica
+          if (!importedFolder.id) importedFolder.id = Date.now();
+          if (!Array.isArray(importedFolder.cards)) importedFolder.cards = [];
+          
+          const existingFolderIndex = currentData.folders.findIndex(f => f && f.id === importedFolder.id);
           
           if (existingFolderIndex !== -1) {
             // Combinar tarjetas si la carpeta existe
-            const existingCards = currentData.folders[existingFolderIndex].cards || [];
-            const newCards = importedFolder.cards || [];
+            const existingCards = (currentData.folders[existingFolderIndex].cards || []);
+            const newCards = (importedFolder.cards || []);
             
-            const cardIds = new Set(existingCards.map(c => c.id));
-            const mergedCards = [...existingCards, ...newCards.filter(c => !cardIds.has(c.id))];
+            const cardIds = new Set(existingCards.map(c => c && c.id));
+            const mergedCards = [...existingCards, ...newCards.filter(c => c && !cardIds.has(c.id))];
             
             currentData.folders[existingFolderIndex].cards = mergedCards;
           } else {
@@ -1147,6 +1163,7 @@
 
         setData(currentData);
         renderSidebar();
+        renderContent();
         
         alert('✅ JSON importado exitosamente. Tus datos se han combinado correctamente.');
         
@@ -1154,6 +1171,7 @@
         document.getElementById('jsonFileInput').value = '';
       } catch (error) {
         alert('❌ Error al procesar el archivo JSON: ' + error.message);
+        console.error(error);
       }
     };
     reader.readAsText(file);
@@ -1358,7 +1376,7 @@
     renderSidebar();
   }
 
-  // ─���──── TARJETAS CRUD ──────
+  // ────── TARJETAS CRUD ──────
   document.getElementById('newCardBtn').addEventListener('click', () => {
     editCard(null);
   });
